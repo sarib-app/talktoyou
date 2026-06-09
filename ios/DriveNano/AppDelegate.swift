@@ -14,11 +14,6 @@ public class AppDelegate: ExpoAppDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    #if !DEBUG
-    AppController.initializeWithoutStarting()
-    AppController.sharedInstance.start()
-    #endif
-
     let delegate = ReactNativeDelegate()
     let factory = ExpoReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -59,10 +54,7 @@ public class AppDelegate: ExpoAppDelegate {
 }
 
 class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
-  // Extension point for config-plugins
-
   override func sourceURL(for bridge: RCTBridge) -> URL? {
-    // needed to return the correct URL for expo-dev-client.
     bridge.bundleURL ?? bundleURL()
   }
 
@@ -70,7 +62,10 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
 #if DEBUG
     return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
 #else
-    return AppController.sharedInstance.launchAssetUrl() ?? Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    if AppController.isInitialized() {
+      return AppController.sharedInstance.launchAssetUrl() ?? Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    }
+    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
 }
