@@ -37,7 +37,7 @@ export default function RootLayout() {
       if (user.role === 'admin') {
         router.replace('/(admin)');
       } else {
-        router.replace('/(user)/home');
+        router.replace('/(user)/camera');
       }
     } else if (user && !inAuth) {
       if (user.role === 'user') {

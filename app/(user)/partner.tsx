@@ -14,6 +14,8 @@ import {
   Dimensions,
   NativeModules,
   Image,
+  Modal,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -64,6 +66,7 @@ export default function PartnerScreen() {
   const [showCompose, setShowCompose] = useState(false);
   const [linking, setLinking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [lightboxUri, setLightboxUri] = useState<string | null>(null);
   const [partnerLastSeen, setPartnerLastSeen] = useState(0);
   const underlineAnim = useRef(new Animated.Value(0)).current;
   const chatListRef = useRef<FlatList>(null);
@@ -273,7 +276,9 @@ export default function PartnerScreen() {
                 <View style={[styles.bubbleRow, item.isMine ? styles.bubbleRowRight : styles.bubbleRowLeft]}>
                   {item.type === 'image' && item.imageUrl ? (
                     <View>
-                      <Image source={{ uri: item.imageUrl }} style={styles.imageBubble} resizeMode="cover" />
+                      <TouchableOpacity activeOpacity={0.9} onPress={() => setLightboxUri(item.imageUrl!)}>
+                        <Image source={{ uri: item.imageUrl }} style={styles.imageBubble} resizeMode="cover" />
+                      </TouchableOpacity>
                       <View style={styles.bubbleFooter}>
                         <Text style={[styles.bubbleTime, item.isMine ? styles.bubbleTimeMine : styles.bubbleTimeTheirs]}>
                           {timeAgo(item.sentAt)}
@@ -469,6 +474,16 @@ export default function PartnerScreen() {
           />
         )}
       </View>
+
+      <Modal visible={!!lightboxUri} transparent animationType="fade" onRequestClose={() => setLightboxUri(null)}>
+        <StatusBar hidden />
+        <TouchableOpacity style={styles.lightboxBg} activeOpacity={1} onPress={() => setLightboxUri(null)}>
+          {lightboxUri && (
+            <Image source={{ uri: lightboxUri }} style={styles.lightboxImage} resizeMode="contain" />
+          )}
+          <Text style={styles.lightboxClose}>✕</Text>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -666,4 +681,15 @@ const styles = StyleSheet.create({
   empty: { paddingTop: 80, alignItems: 'center', gap: 8 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#334155' },
   emptySub: { fontSize: 13, color: '#1E293B', textAlign: 'center' },
+  lightboxBg: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.95)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  lightboxImage: { width: '100%', height: '100%' },
+  lightboxClose: {
+    position: 'absolute', top: 56, right: 24,
+    color: '#fff', fontSize: 22, fontWeight: '700',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+  },
 });
