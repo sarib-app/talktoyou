@@ -6,7 +6,7 @@
 	<string>development</string>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.drivenano.app</string>
+		<string>group.com.talktou.app</string>
 	</array>
 </dict>
 </plist>
