@@ -19,6 +19,7 @@ export interface Message {
   id?: string;
   text?: string;
   imageUrl?: string;
+  filterColor?: string;
   type: 'text' | 'image';
   fromName: string;
   fromUid: string;

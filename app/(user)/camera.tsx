@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -26,6 +27,7 @@ const FILTERS = [
   { id: 'rose',  label: 'rose',   color: 'rgba(255,80,130,0.22)' },
   { id: 'dusk',  label: 'dusk',   color: 'rgba(110,40,200,0.22)' },
   { id: 'night', label: 'night',  color: 'rgba(0,20,80,0.35)' },
+  { id: 'glow',  label: 'glow',   color: 'rgba(255,250,240,0.35)' },
 ];
 
 type Stage = 'live' | 'preview' | 'sending' | 'sent';
@@ -39,7 +41,19 @@ export default function CameraScreen() {
   const [filter, setFilter] = useState(FILTERS[0]);
   const [stage, setStage] = useState<Stage>('live');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [frontCapture, setFrontCapture] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      const timer = setTimeout(() => setIsFocused(true), 600);
+      return () => {
+        clearTimeout(timer);
+        setIsFocused(false);
+      };
+    }, [])
+  );
 
   if (!permission) return <View style={styles.bg} />;
 
@@ -60,6 +74,7 @@ export default function CameraScreen() {
     if (!cameraRef.current) return;
     const photo = await cameraRef.current.takePictureAsync({ quality: 0.75 });
     if (photo?.uri) {
+      setFrontCapture(facing === 'front');
       setPhotoUri(photo.uri);
       setStage('preview');
     }
@@ -70,7 +85,7 @@ export default function CameraScreen() {
     setStage('sending');
     try {
       const url = await uploadSnapImage(user.uid, photoUri);
-      await sendImageMessage(user.uid, user.displayName, partner.uid, url);
+      await sendImageMessage(user.uid, user.displayName, partner.uid, url, filter.color);
       setStage('sent');
       setTimeout(() => {
         setPhotoUri(null);
@@ -90,7 +105,7 @@ export default function CameraScreen() {
     <View style={styles.bg}>
       {stage === 'live' && (
         <>
-          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
+          {isFocused && <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />}
           {filter.color && (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: filter.color }]} pointerEvents="none" />
           )}
@@ -137,7 +152,11 @@ export default function CameraScreen() {
 
       {(stage === 'preview' || stage === 'sending' || stage === 'sent') && photoUri && (
         <>
-          <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image
+        source={{ uri: photoUri }}
+        style={[StyleSheet.absoluteFill, frontCapture && { transform: [{ scaleX: -1 }] }]}
+        resizeMode="cover"
+      />
           {filter.color && (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: filter.color }]} pointerEvents="none" />
           )}

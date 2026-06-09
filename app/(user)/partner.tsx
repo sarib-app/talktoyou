@@ -277,7 +277,12 @@ export default function PartnerScreen() {
                   {item.type === 'image' && item.imageUrl ? (
                     <View>
                       <TouchableOpacity activeOpacity={0.9} onPress={() => setLightboxUri(item.imageUrl!)}>
-                        <Image source={{ uri: item.imageUrl }} style={styles.imageBubble} resizeMode="cover" />
+                        <View style={styles.imageBubble}>
+                          <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                          {item.filterColor && (
+                            <View style={[StyleSheet.absoluteFill, { backgroundColor: item.filterColor, borderRadius: 16 }]} pointerEvents="none" />
+                          )}
+                        </View>
                       </TouchableOpacity>
                       <View style={styles.bubbleFooter}>
                         <Text style={[styles.bubbleTime, item.isMine ? styles.bubbleTimeMine : styles.bubbleTimeTheirs]}>
@@ -479,7 +484,12 @@ export default function PartnerScreen() {
         <StatusBar hidden />
         <TouchableOpacity style={styles.lightboxBg} activeOpacity={1} onPress={() => setLightboxUri(null)}>
           {lightboxUri && (
-            <Image source={{ uri: lightboxUri }} style={styles.lightboxImage} resizeMode="contain" />
+            <>
+              <Image source={{ uri: lightboxUri }} style={styles.lightboxImage} resizeMode="contain" />
+              {chatMessages.find(m => m.imageUrl === lightboxUri)?.filterColor && (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: chatMessages.find(m => m.imageUrl === lightboxUri)!.filterColor }]} pointerEvents="none" />
+              )}
+            </>
           )}
           <Text style={styles.lightboxClose}>✕</Text>
         </TouchableOpacity>

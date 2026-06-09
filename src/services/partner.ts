@@ -38,14 +38,17 @@ export async function sendImageMessage(
   fromUid: string,
   fromName: string,
   partnerUid: string,
-  imageUrl: string
+  imageUrl: string,
+  filterColor?: string | null
 ): Promise<void> {
   const sentAt = Date.now();
   const payload: WidgetMessage = { message: '📸 sent a photo', fromName, sentAt };
+  const msg: Record<string, unknown> = { imageUrl, type: 'image', fromName, fromUid, sentAt };
+  if (filterColor) msg.filterColor = filterColor;
   await Promise.all([
     setDoc(doc(db, 'widgetMessages', partnerUid), payload),
-    addDoc(collection(db, 'userMessages', fromUid, 'sent'), { imageUrl, type: 'image', fromName, fromUid, sentAt }),
-    addDoc(collection(db, 'userMessages', partnerUid, 'received'), { imageUrl, type: 'image', fromName, fromUid, sentAt }),
+    addDoc(collection(db, 'userMessages', fromUid, 'sent'), msg),
+    addDoc(collection(db, 'userMessages', partnerUid, 'received'), msg),
   ]);
 }
 
