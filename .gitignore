@@ -36,6 +36,10 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# bare workflow — track ios/ and android/ but ignore generated build artifacts
+ios/Pods/
+ios/build/
+ios/DerivedData/
+android/build/
+android/.gradle/
+android/app/build/

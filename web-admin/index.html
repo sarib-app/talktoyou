@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>talktou — admin</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0D0D14; --surface: #141420; --surface2: #1a1a2e;
+      --border: rgba(255,255,255,0.07); --accent: #6C63FF; --accent2: #4f46e5;
+      --text: #F7F6F2; --text2: #94A3B8; --text3: #475569;
+      --danger: #dc2626; --success: #16a34a; --sidebar-w: 240px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+    #login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 12px; }
+    #login-screen h1 { font-size: 28px; color: var(--accent); letter-spacing: 2px; margin-bottom: 8px; }
+    #login-screen p { color: var(--text3); font-size: 13px; margin-bottom: 16px; }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 32px; width: 360px; display: flex; flex-direction: column; gap: 12px; }
+    .login-box input { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--text); outline: none; }
+    .login-box input:focus { border-color: var(--accent); }
+    .login-box button { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .login-box button:hover { background: var(--accent2); }
+    #login-error { color: #f87171; font-size: 13px; text-align: center; min-height: 18px; }
+
+    #app { display: none; height: 100vh; flex-direction: column; }
+    #app.visible { display: flex; }
+
+    #topbar { height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 14px; flex-shrink: 0; }
+    #topbar .logo { font-size: 15px; font-weight: 800; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
+    #topbar .spacer { flex: 1; }
+    #topbar .admin-name { font-size: 12px; color: var(--text3); }
+    #topbar button { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text2); font-size: 12px; padding: 6px 12px; cursor: pointer; }
+    #topbar button:hover { background: rgba(255,255,255,0.1); }
+
+    #main { display: flex; flex: 1; overflow: hidden; }
+
+    #sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+    #sidebar-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+    #sidebar-header h3 { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+    #user-search { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--text); outline: none; margin-top: 8px; }
+    #user-search:focus { border-color: var(--accent); }
+    #user-list { flex: 1; overflow-y: auto; padding: 8px; }
+    #user-list::-webkit-scrollbar { width: 4px; }
+    #user-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .user-item { padding: 10px 12px; border-radius: 10px; cursor: pointer; margin-bottom: 2px; display: flex; align-items: center; gap: 10px; }
+    .user-item:hover { background: rgba(255,255,255,0.04); }
+    .user-item.active { background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.25); }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .user-info { overflow: hidden; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-email { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    #content { flex: 1; display: flex; overflow: hidden; }
+
+    #no-user { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text3); }
+    #no-user .big { font-size: 52px; }
+    #no-user p { font-size: 14px; }
+
+    #user-panel { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 28px; gap: 20px; }
+    #user-panel.visible { display: flex; }
+    #user-panel::-webkit-scrollbar { width: 6px; }
+    #user-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .panel-profile { background: var(--surface2); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px solid var(--border); }
+    .panel-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; }
+    .panel-name { font-size: 18px; font-weight: 700; }
+    .panel-email { font-size: 13px; color: var(--text3); }
+
+    .panel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .panel-card h3 { font-size: 14px; font-weight: 700; color: var(--text); }
+    .panel-card p { font-size: 12px; color: var(--text3); line-height: 1.6; }
+    .field-label { font-size: 12px; font-weight: 600; color: var(--text2); }
+    .panel-input { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--text); outline: none; resize: none; }
+    .panel-input:focus { border-color: var(--accent); }
+    .panel-btn { padding: 11px; border-radius: 10px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-alarm { background: var(--danger); color: #fff; }
+    .btn-alarm:hover { background: #b91c1c; }
+    .btn-alarm.stop { background: var(--success); }
+    .btn-alarm.stop:hover { background: #15803d; }
+
+    .sent-badge { font-size: 12px; color: #4ade80; font-weight: 600; display: none; }
+    .sent-badge.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <h1>talktou</h1>
+  <p>admin panel</p>
+  <div class="login-box">
+    <input type="email" id="login-email" placeholder="email" autocomplete="email" />
+    <input type="password" id="login-password" placeholder="password" autocomplete="current-password" />
+    <button id="login-btn">Sign In</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <span class="logo">talktou</span>
+    <span class="admin-name" id="admin-name-label"></span>
+    <span class="spacer"></span>
+    <button id="logout-btn">Sign out</button>
+  </div>
+  <div id="main">
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <h3>Users</h3>
+        <input id="user-search" placeholder="search..." type="text" />
+      </div>
+      <div id="user-list"></div>
+    </div>
+
+    <div id="content">
+      <div id="no-user">
+        <div class="big">💬</div>
+        <p>Select a user</p>
+      </div>
+
+      <div id="user-panel">
+        <div class="panel-profile">
+          <div class="panel-avatar" id="panel-avatar"></div>
+          <div class="panel-name" id="panel-name"></div>
+          <div class="panel-email" id="panel-email"></div>
+        </div>
+
+        <div class="panel-card">
+          <h3>Send Notification</h3>
+          <p>Send a push notification directly to this user's device.</p>
+          <div>
+            <div class="field-label" style="margin-bottom:6px;">Title</div>
+            <input class="panel-input" id="notif-title" placeholder="e.g. Hey!" style="width:100%;" />
+          </div>
+          <div>
+            <div class="field-label" style="margin-bottom:6px;">Message</div>
+            <textarea class="panel-input" id="notif-body" placeholder="Type your message..." rows="3" style="width:100%;"></textarea>
+          </div>
+          <button class="panel-btn btn-primary" id="btn-send-notif">Send Notification</button>
+          <span class="sent-badge" id="sent-badge">✓ Sent!</span>
+        </div>
+
+        <div class="panel-card">
+          <h3>🚨 Emergency Alarm</h3>
+          <p>Triggers a loud alarm on this user's device, even when on silent.</p>
+          <button class="panel-btn btn-alarm" id="btn-alarm">🔊 Start Alarm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: 'AIzaSyAhAg0EsprLMu_-T12yM5PbGZsMT9CHEFQ',
+  authDomain: 'drive-nano-b0dfb.firebaseapp.com',
+  projectId: 'drive-nano-b0dfb',
+  storageBucket: 'drive-nano-b0dfb.firebasestorage.app',
+  messagingSenderId: '529235790050',
+  appId: '1:529235790050:web:ccc9d2ea342883be8176bb',
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const $ = id => document.getElementById(id);
+let currentUid = null;
+let alarmActive = false;
+let userUnsubscribe = null;
+let allUsers = [];
+
+auth.onAuthStateChanged(async user => {
+  if (!user) { showLogin(); return; }
+  const snap = await db.doc(`users/${user.uid}`).get();
+  if (!snap.exists || snap.data().role !== 'admin') {
+    await auth.signOut(); showLogin('Access denied.'); return;
+  }
+  $('admin-name-label').textContent = user.email;
+  $('login-screen').style.display = 'none';
+  $('app').classList.add('visible');
+  loadUsers();
+});
+
+function showLogin(err = '') {
+  $('login-screen').style.display = 'flex';
+  $('app').classList.remove('visible');
+  $('login-error').textContent = err;
+}
+
+$('login-btn').onclick = async () => {
+  $('login-error').textContent = '';
+  try { await auth.signInWithEmailAndPassword($('login-email').value.trim(), $('login-password').value); }
+  catch (e) { $('login-error').textContent = e.message; }
+};
+$('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') $('login-btn').click(); });
+$('logout-btn').onclick = () => auth.signOut();
+
+async function loadUsers() {
+  const snap = await db.collection('users').get();
+  allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(u => u.role !== 'admin');
+  renderUserList(allUsers);
+}
+
+function renderUserList(users) {
+  const list = $('user-list');
+  list.innerHTML = '';
+  if (!users.length) { list.innerHTML = '<div style="padding:16px;color:#475569;font-size:12px;">No users found</div>'; return; }
+  users.forEach(u => {
+    const el = document.createElement('div');
+    el.className = 'user-item' + (u.uid === currentUid ? ' active' : '');
+    el.dataset.uid = u.uid;
+    el.innerHTML = `
+      <div class="user-avatar">${(u.displayName || u.email || '?')[0].toUpperCase()}</div>
+      <div class="user-info">
+        <div class="user-name">${u.displayName || '—'}</div>
+        <div class="user-email">${u.email || ''}</div>
+      </div>`;
+    el.onclick = () => selectUser(u);
+    list.appendChild(el);
+  });
+}
+
+$('user-search').oninput = function() {
+  const q = this.value.toLowerCase();
+  renderUserList(allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)));
+};
+
+function selectUser(u) {
+  currentUid = u.uid;
+  document.querySelectorAll('.user-item').forEach(el => el.classList.toggle('active', el.dataset.uid === u.uid));
+  $('no-user').style.display = 'none';
+  $('user-panel').classList.add('visible');
+  $('panel-avatar').textContent = (u.displayName || u.email || '?')[0].toUpperCase();
+  $('panel-name').textContent = u.displayName || '—';
+  $('panel-email').textContent = u.email || '';
+  $('notif-title').value = '';
+  $('notif-body').value = '';
+  $('sent-badge').classList.remove('visible');
+
+  if (userUnsubscribe) userUnsubscribe();
+  userUnsubscribe = db.doc(`users/${u.uid}`).onSnapshot(snap => {
+    if (!snap.exists) return;
+    alarmActive = !!snap.data()?.alarmActive;
+    const btn = $('btn-alarm');
+    btn.textContent = alarmActive ? '🔕 Stop Alarm' : '🔊 Start Alarm';
+    btn.classList.toggle('stop', alarmActive);
+  });
+}
+
+$('btn-send-notif').onclick = async () => {
+  const body = $('notif-body').value.trim();
+  if (!body || !currentUid) return;
+  $('btn-send-notif').disabled = true;
+  try {
+    const userSnap = await db.doc(`users/${currentUid}`).get();
+    const token = userSnap.data()?.expoPushToken;
+    if (token) {
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: token,
+          title: $('notif-title').value.trim() || 'Hey!',
+          body,
+          sound: 'notification.wav',
+          priority: 'high',
+        }),
+      });
+    }
+    await db.collection(`notifications/${currentUid}/received`).add({
+      title: $('notif-title').value.trim() || 'Hey!',
+      body,
+      fromUid: auth.currentUser.uid,
+      sentAt: Date.now(),
+      type: 'admin',
+    });
+    $('notif-title').value = '';
+    $('notif-body').value = '';
+    $('sent-badge').classList.add('visible');
+    setTimeout(() => $('sent-badge').classList.remove('visible'), 3000);
+  } catch {}
+  $('btn-send-notif').disabled = false;
+};
+
+$('btn-alarm').onclick = async () => {
+  if (!currentUid) return;
+  await db.doc(`users/${currentUid}`).update({ alarmActive: !alarmActive });
+};
+</script>
+</body>
+</html>

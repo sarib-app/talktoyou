@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users: any authenticated user can read (needed for partner lookups),
+    // but only the owner can write their own doc; admins can read/write all
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == uid;
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Backup logs: owner only (background task writes as the user)
+    match /backupLogs/{uid} {
+      allow read, write: if request.auth.uid == uid;
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Notifications: owner reads their own, admin reads all, cloud functions write
+    match /notifications/{uid}/{subcollection}/{docId} {
+      allow read: if request.auth.uid == uid;
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Partner messages: owner reads their own inbox, authenticated users write
+    match /userMessages/{uid}/{subcollection}/{docId} {
+      allow read: if request.auth.uid == uid;
+      allow write: if request.auth != null;
+    }
+
+    // Widget messages: the partner (sender) writes, anyone can read (needed for the widget)
+    // The widget fetches without auth via REST API + API key
+    match /widgetMessages/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

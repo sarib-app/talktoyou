@@ -1,30 +1,97 @@
 {
   "expo": {
-    "name": "drive-nano",
-    "slug": "drive-nano",
-    "version": "1.0.0",
+    "name": "talktou",
+    "slug": "talktou",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "talktou",
+    "updates": {
+      "url": "https://u.expo.dev/18348784-dc9a-4c3a-bf37-2771897679e5",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "runtimeVersion": "1.2.0",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.talktou.app",
+      "buildNumber": "20",
+      "infoPlist": {
+        "NSCameraUsageDescription": "talktou uses the camera for video features.",
+        "UIBackgroundModes": [
+          "remote-notification",
+          "audio"
+        ],
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Access your photos for sharing memories.",
+        "NSPhotoLibraryAddUsageDescription": "Save media to your photo library."
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.talktou.app"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.talktou.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.WAKE_LOCK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "talktou uses the camera to take snaps for your partner."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Access your photos for sharing memories with your partner."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Access your photos for sharing memories.",
+          "savePhotosPermission": "Save media to your photo library.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#4f46e5",
+          "sounds": [
+            "./assets/notification.wav"
+          ]
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "18348784-dc9a-4c3a-bf37-2771897679e5"
+      }
+    },
+    "owner": "satibkhan"
   }
 }
