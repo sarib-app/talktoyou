@@ -15,7 +15,8 @@ public class AppDelegate: ExpoAppDelegate {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     #if !DEBUG
-    EXUpdatesAppController.sharedInstance.start()
+    AppController.initializeWithoutStarting()
+    AppController.sharedInstance.start()
     #endif
 
     let delegate = ReactNativeDelegate()
@@ -69,7 +70,7 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
 #if DEBUG
     return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry")
 #else
-    return EXUpdatesAppController.sharedInstance.launchAssetURL ?? Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    return AppController.sharedInstance.launchAssetUrl() ?? Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
 }
