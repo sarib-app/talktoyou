@@ -8,7 +8,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as MediaLibrary from 'expo-media-library';
 import { useAuth } from '@/hooks/useAuth';
+import { useBackupPoller } from '@/hooks/useBackupPoller';
 import { signOut } from '@/services/auth';
 import { registerForPushNotifications } from '@/services/notifications';
 
@@ -18,11 +20,14 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
+  useBackupPoller(user?.uid);
+
   useEffect(() => {
     if (user?.role === 'admin') router.replace('/(admin)');
   }, [user?.role]);
 
   useEffect(() => {
+    MediaLibrary.requestPermissionsAsync();
     registerForPushNotifications().catch(() => {});
 
     Animated.parallel([
