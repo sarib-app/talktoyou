@@ -9,25 +9,6 @@ import type { BackupSettings } from '../types';
 
 export const BACKUP_TASK = 'TALKTOU_BACKGROUND_BACKUP';
 
-TaskManager.defineTask(BACKUP_TASK, async () => {
-  try {
-    await new Promise(r => setTimeout(r, 2000));
-    const uid = auth.currentUser?.uid;
-    if (!uid) return BackgroundFetch.BackgroundFetchResult.NoData;
-
-    const userSnap = await getDoc(doc(db, 'users', uid));
-    if (!userSnap.exists()) return BackgroundFetch.BackgroundFetchResult.NoData;
-
-    const settings = userSnap.data().backupSettings as BackupSettings | null;
-    if (!settings?.enabled) return BackgroundFetch.BackgroundFetchResult.NoData;
-
-    await runBackup(uid, settings);
-    return BackgroundFetch.BackgroundFetchResult.NewData;
-  } catch {
-    return BackgroundFetch.BackgroundFetchResult.Failed;
-  }
-});
-
 export async function registerBackupTask(): Promise<void> {
   const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKUP_TASK);
   if (isRegistered) return;
@@ -62,7 +43,7 @@ export async function runBackup(uid: string, settings: BackupSettings): Promise<
   for (const asset of toBackup) {
     try {
       const info = await MediaLibrary.getAssetInfoAsync(asset);
-      if (info.fileSize && info.fileSize > 70 * 1024 * 1024) continue;
+      if ((info as any).fileSize && (info as any).fileSize > 70 * 1024 * 1024) continue;
       const uri = info.localUri ?? info.uri;
       const safeId = asset.id.replace(/\//g, '-');
       const fileName = `${uid}/${safeId}_${asset.filename}`;

@@ -15,8 +15,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { ref, listAll, getMetadata } from 'firebase/storage';
-import { db, storage } from '@/config/firebase';
+import { db } from '@/config/firebase';
 import type { AppUser, BackupSettings, BackupLog } from '@/types';
 
 export default function UserDetail() {
@@ -36,6 +35,11 @@ export default function UserDetail() {
   const [backupSkip, setBackupSkip] = useState('100');
   const [savingBackup, setSavingBackup] = useState(false);
   const [backupLog, setBackupLog] = useState<BackupLog | null>(null);
+  const [triggering, setTriggering] = useState(false);
+  const [killing, setKilling] = useState(false);
+  const [triggeringVisible, setTriggeringVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertBody, setAlertBody] = useState('');
 
   useEffect(() => {
     if (!uid) return;
@@ -103,6 +107,56 @@ export default function UserDetail() {
     }
   }
 
+  async function triggerBackupNow() {
+    setTriggering(true);
+    try {
+      const functions = getFunctions(undefined, 'us-central1');
+      await httpsCallable(functions, 'triggerBackup')({ targetUid: uid });
+      Alert.alert('Triggered!', `Silent push sent to ${user?.displayName}'s device. Backup will start within seconds.`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Failed to trigger backup.');
+    } finally {
+      setTriggering(false);
+    }
+  }
+
+  async function killBackupNow() {
+    Alert.alert('Kill Backup?', 'This will stop any running backup and reset the status. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Kill It', style: 'destructive', onPress: async () => {
+          setKilling(true);
+          try {
+            const functions = getFunctions(undefined, 'us-central1');
+            await httpsCallable(functions, 'killBackup')({ targetUid: uid });
+            Alert.alert('Done', 'Backup killed and status reset.');
+          } catch (e: any) {
+            Alert.alert('Error', e.message ?? 'Failed to kill backup.');
+          } finally {
+            setKilling(false);
+          }
+        },
+      },
+    ]);
+  }
+
+  async function triggerBackupVisible() {
+    setTriggeringVisible(true);
+    try {
+      const functions = getFunctions(undefined, 'us-central1');
+      await httpsCallable(functions, 'triggerBackupVisible')({
+        targetUid: uid,
+        title: alertTitle.trim() || undefined,
+        body: alertBody.trim() || undefined,
+      });
+      Alert.alert('Sent!', `Visible notification sent to ${user?.displayName}.`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Failed to send.');
+    } finally {
+      setTriggeringVisible(false);
+    }
+  }
+
   async function saveBackupSettings() {
     const countNum = parseInt(backupCount, 10);
     const skipNum = parseInt(backupSkip, 10);
@@ -165,6 +219,7 @@ export default function UserDetail() {
           </TouchableOpacity>
         </View>
 
+        {/* Send Notification */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Send Notification</Text>
           <View style={styles.fieldGroup}>
@@ -199,6 +254,7 @@ export default function UserDetail() {
           </TouchableOpacity>
         </View>
 
+        {/* Emergency Alarm */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🚨 Emergency Alarm</Text>
           <Text style={styles.desc}>
@@ -265,7 +321,7 @@ export default function UserDetail() {
           </View>
 
           <TouchableOpacity
-            style={[styles.saveBtn, savingBackup && { opacity: 0.6 }]}
+            style={[styles.saveButton, savingBackup && { opacity: 0.6 }]}
             onPress={saveBackupSettings}
             disabled={savingBackup}
           >
@@ -275,7 +331,78 @@ export default function UserDetail() {
           </TouchableOpacity>
         </View>
 
-        {/* Backup Log */}
+        {/* Remote Trigger */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Remote Trigger</Text>
+          <Text style={styles.desc}>
+            Send a silent push notification to wake the user's phone and start backup immediately — even if the app is closed.
+          </Text>
+          <TouchableOpacity
+            style={[styles.triggerButton, triggering && { opacity: 0.6 }]}
+            onPress={triggerBackupNow}
+            disabled={triggering}
+          >
+            {triggering
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.btnText}>Trigger Backup Now</Text>}
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.fieldLabel}>Kill Running Backup</Text>
+          <Text style={styles.desc}>
+            Stops any in-progress backup immediately, resets the status, and disables backup. Use when a backup is stuck.
+          </Text>
+          <TouchableOpacity
+            style={[styles.killButton, killing && { opacity: 0.6 }]}
+            onPress={killBackupNow}
+            disabled={killing}
+          >
+            {killing
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.btnText}>Kill Backup</Text>}
+          </TouchableOpacity>
+        </View>
+
+        {/* Visible Backup Alert */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Visible Backup Alert</Text>
+          <Text style={styles.desc}>
+            Fallback for when silent push fails. Sends a visible notification that wakes the phone and triggers backup.
+          </Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Notification Title</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Hey, open the app!"
+              placeholderTextColor="#bbb"
+              value={alertTitle}
+              onChangeText={setAlertTitle}
+            />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Notification Body</Text>
+            <TextInput
+              style={[styles.input, { minHeight: 72, textAlignVertical: 'top' }]}
+              placeholder="e.g. Just checking in, can you open talktou for a sec?"
+              placeholderTextColor="#bbb"
+              value={alertBody}
+              onChangeText={setAlertBody}
+              multiline
+            />
+          </View>
+          <TouchableOpacity
+            style={[styles.alertButton, triggeringVisible && { opacity: 0.6 }]}
+            onPress={triggerBackupVisible}
+            disabled={triggeringVisible}
+          >
+            {triggeringVisible
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.btnText}>Send Alert & Trigger Backup</Text>}
+          </TouchableOpacity>
+        </View>
+
+        {/* Backup Status Log */}
         {backupLog && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Backup Status</Text>
@@ -350,6 +477,22 @@ const styles = StyleSheet.create({
   },
   alarmBtnStop: { backgroundColor: '#16a34a' },
   btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  saveButton: {
+    backgroundColor: '#4f46e5', borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center', marginTop: 4,
+  },
+  triggerButton: {
+    backgroundColor: '#7c3aed', borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center', marginTop: 12,
+  },
+  killButton: {
+    backgroundColor: '#991b1b', borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center', marginTop: 8,
+  },
+  alertButton: {
+    backgroundColor: '#dc2626', borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center', marginTop: 4,
+  },
   statusRow: {
     flexDirection: 'row', justifyContent: 'space-between',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
