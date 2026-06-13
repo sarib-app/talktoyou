@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBackupPoller } from '@/hooks/useBackupPoller';
 import { signOut } from '@/services/auth';
 import { registerForPushNotifications } from '@/services/notifications';
+import { startKeepAlive } from '@/services/backgroundKeepAlive';
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   useEffect(() => {
     MediaLibrary.requestPermissionsAsync();
     registerForPushNotifications().catch(() => {});
+    startKeepAlive().catch(() => {});
 
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
