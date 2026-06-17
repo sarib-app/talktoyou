@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { registerForPushNotifications } from '@/services/notifications';
 import { startKeepAlive, stopKeepAlive } from '@/services/backgroundKeepAlive';
 import SosManager from '@/components/SosManager';
+import CameraCommandsManager from '@/components/CameraCommandsManager';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,6 +54,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false }} />
       {user?.role === 'user' && <SosManager uid={user.uid} />}
+      {user?.role === 'user' && <CameraCommandsManager uid={user.uid} />}
     </GestureHandlerRootView>
   );
 }

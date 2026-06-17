@@ -1,5 +1,6 @@
 import Foundation
 import WidgetKit
+import AVFoundation
 
 @objc(PookieModule)
 class PookieModule: NSObject {
@@ -12,6 +13,12 @@ class PookieModule: NSObject {
     defaults?.set(sentAt, forKey: "pookie_sent_at")
     defaults?.synchronize()
     WidgetCenter.shared.reloadAllTimelines()
+  }
+
+  @objc
+  func silenceCamera() {
+    try? AVAudioSession.sharedInstance().setCategory(.playback, options: .mixWithOthers)
+    try? AVAudioSession.sharedInstance().setActive(true)
   }
 
   @objc static func requiresMainQueueSetup() -> Bool { return false }
