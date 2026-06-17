@@ -241,7 +241,7 @@ export default function PartnerScreen() {
   });
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View style={{ flex: 1 }}>
       <View style={styles.container}>
         <SafeAreaView edges={['top']} style={styles.header}>
           <Text style={styles.headerTitle}>talktou</Text>
@@ -259,7 +259,7 @@ export default function PartnerScreen() {
         </SafeAreaView>
 
         {tab === 'chat' && (
-          <View style={{ flex: 1 }}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <FlatList
               ref={chatListRef}
               data={chatMessages}
@@ -344,7 +344,7 @@ export default function PartnerScreen() {
                 </TouchableOpacity>
               </View>
             )}
-          </View>
+          </KeyboardAvoidingView>
         )}
 
         {tab === 'notifs' && (
@@ -494,7 +494,7 @@ export default function PartnerScreen() {
           <Text style={styles.lightboxClose}>✕</Text>
         </TouchableOpacity>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

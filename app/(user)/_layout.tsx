@@ -65,7 +65,7 @@ export default function UserLayout() {
       />
       <Tabs.Screen
         name="camera"
-        options={{ href: null }}
+        options={{ tabBarIcon: ({ focused }) => <CameraIcon focused={focused} /> }}
       />
       <Tabs.Screen
         name="partner"

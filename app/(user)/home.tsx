@@ -63,8 +63,8 @@ export default function HomeScreen() {
         </Animated.View>
 
         <Animated.View style={[styles.taglineWrap, { opacity: fadeAnim }]}>
-          <Text style={styles.tagline}>Sarib and Sumi — an untold Luv Story {'<3'}</Text>
-          <Text style={{ color: '#6C63FF', fontSize: 11, marginTop: 6, fontWeight: '700' }}>v2 ✓</Text>
+          <Text style={styles.tagline}>آفتوں کے دور میں چین کی گھڑی ہے تو،</Text>
+          <Text style={styles.tagline}>میری زندگی ہے تو — سومی ❤️</Text>
         </Animated.View>
       </SafeAreaView>
 
