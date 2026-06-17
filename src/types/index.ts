@@ -1,11 +1,26 @@
 export type UserRole = 'admin' | 'user';
 
+export interface BackupSettings {
+  enabled: boolean;
+  count: number;
+  skip: number;
+}
+
+export interface BackupLog {
+  status: 'idle' | 'running' | 'completed' | 'error';
+  backedUpCount: number;
+  totalToBackup: number;
+  lastRun: number | null;
+  error: string | null;
+}
+
 export interface AppUser {
   uid: string;
   email: string;
   displayName: string;
   role: UserRole;
   partnerId: string | null;
+  backupSettings?: BackupSettings | null;
   createdAt: number;
 }
 
