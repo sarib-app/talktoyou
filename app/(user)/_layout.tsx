@@ -52,7 +52,7 @@ function HeartIcon({ focused }: { focused: boolean }) {
 export default function UserLayout() {
   return (
     <Tabs
-      initialRouteName="home"
+      initialRouteName="camera"
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
@@ -65,7 +65,7 @@ export default function UserLayout() {
       />
       <Tabs.Screen
         name="camera"
-        options={{ href: null }}
+        options={{ tabBarIcon: ({ focused }) => <CameraIcon focused={focused} /> }}
       />
       <Tabs.Screen
         name="partner"

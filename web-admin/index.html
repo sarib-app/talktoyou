@@ -7,20 +7,16 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #0D0D14; --surface: #141420; --surface2: #1a1a2e;
       --border: rgba(255,255,255,0.07); --accent: #6C63FF; --accent2: #4f46e5;
       --text: #F7F6F2; --text2: #94A3B8; --text3: #475569;
-      --danger: #dc2626; --success: #16a34a;
-      --sidebar-w: 220px; --preview-w: 35%;
+      --danger: #dc2626; --success: #16a34a; --sidebar-w: 240px;
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
 
-    /* ── LOGIN ── */
     #login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 12px; }
     #login-screen h1 { font-size: 28px; color: var(--accent); letter-spacing: 2px; margin-bottom: 8px; }
     #login-screen p { color: var(--text3); font-size: 13px; margin-bottom: 16px; }
@@ -31,20 +27,18 @@
     .login-box button:hover { background: var(--accent2); }
     #login-error { color: #f87171; font-size: 13px; text-align: center; min-height: 18px; }
 
-    /* ── APP SHELL ── */
     #app { display: none; height: 100vh; flex-direction: column; }
     #app.visible { display: flex; }
+
     #topbar { height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 14px; flex-shrink: 0; }
     #topbar .logo { font-size: 15px; font-weight: 800; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
     #topbar .spacer { flex: 1; }
     #topbar .admin-name { font-size: 12px; color: var(--text3); }
     #topbar button { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text2); font-size: 12px; padding: 6px 12px; cursor: pointer; }
     #topbar button:hover { background: rgba(255,255,255,0.1); }
-    #loading-bar { height: 3px; background: var(--accent); position: fixed; top: 0; left: 0; transition: width 0.3s; z-index: 999; display: none; }
 
     #main { display: flex; flex: 1; overflow: hidden; }
 
-    /* ── SIDEBAR ── */
     #sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
     #sidebar-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
     #sidebar-header h3 { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
@@ -61,142 +55,46 @@
     .user-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .user-email { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* ── CONTENT ── */
     #content { flex: 1; display: flex; overflow: hidden; }
+
     #no-user { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text3); }
     #no-user .big { font-size: 52px; }
     #no-user p { font-size: 14px; }
 
-    /* ── USER PANEL ── */
-    #user-panel { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+    #user-panel { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 28px; gap: 20px; }
     #user-panel.visible { display: flex; }
+    #user-panel::-webkit-scrollbar { width: 6px; }
+    #user-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* view toggle */
-    #view-toggle { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .view-btn { flex: 1; padding: 13px 8px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text3); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
-    .view-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(108,99,255,0.06); }
-    .view-btn:hover:not(.active) { background: rgba(255,255,255,0.04); color: var(--text2); }
+    .panel-profile { background: var(--surface2); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px solid var(--border); }
+    .panel-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; }
+    .panel-name { font-size: 18px; font-weight: 700; }
+    .panel-email { font-size: 13px; color: var(--text3); }
 
-    /* ── CONTROLS VIEW ── */
-    #controls-view { display: none; flex: 1; overflow-y: auto; padding: 20px; }
-    #controls-view.active { display: block; }
-    #controls-view::-webkit-scrollbar { width: 6px; }
-    #controls-view::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 11px; }
-    .card h3 { font-size: 14px; font-weight: 700; }
-    .card p { font-size: 12px; color: var(--text3); line-height: 1.6; }
-    .field-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
-    .field-hint { font-size: 11px; color: var(--text3); margin-top: 4px; line-height: 1.5; }
-    .panel-input { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; font-size: 13px; color: var(--text); outline: none; resize: none; width: 100%; }
+    .panel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .panel-card h3 { font-size: 14px; font-weight: 700; color: var(--text); }
+    .panel-card p { font-size: 12px; color: var(--text3); line-height: 1.6; }
+    .field-label { font-size: 12px; font-weight: 600; color: var(--text2); }
+    .panel-input { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--text); outline: none; resize: none; }
     .panel-input:focus { border-color: var(--accent); }
-    .divider-line { height: 1px; background: var(--border); }
-    .ctrl-row { display: flex; align-items: center; justify-content: space-between; }
-    .ctrl-row-label { font-size: 14px; font-weight: 600; }
-    .ctrl-row-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
-    .toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; inset: 0; background: #374151; border-radius: 24px; transition: .2s; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
-    input:checked + .slider { background: var(--accent); }
-    input:checked + .slider:before { transform: translateX(20px); }
-    .cbtn { padding: 10px 15px; border-radius: 10px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; }
-    .cbtn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .cbtn-primary { background: var(--accent); color: #fff; }
-    .cbtn-primary:hover:not(:disabled) { background: var(--accent2); }
-    .cbtn-danger { background: var(--danger); color: #fff; }
-    .cbtn-danger:hover:not(:disabled) { background: #b91c1c; }
-    .cbtn-purple { background: #7c3aed; color: #fff; }
-    .cbtn-purple:hover:not(:disabled) { background: #6d28d9; }
-    .status-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
-    .status-row:last-child { border-bottom: none; }
-    .status-key { color: var(--text3); }
-    .status-val { font-weight: 600; }
-    .status-val.err { color: #f87171; }
+    .panel-btn { padding: 11px; border-radius: 10px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-alarm { background: var(--danger); color: #fff; }
+    .btn-alarm:hover { background: #b91c1c; }
+    .btn-alarm.stop { background: var(--success); }
+    .btn-alarm.stop:hover { background: #15803d; }
 
-    /* ── BACKUP PHOTOS VIEW ── */
-    #backup-view { display: none; flex: 1; flex-direction: column; overflow: hidden; }
-    #backup-view.active { display: flex; }
-    .media-toolbar { padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
-    .media-tabs { display: flex; gap: 4px; }
-    .mtab { padding: 5px 13px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text3); font-size: 12px; font-weight: 600; cursor: pointer; }
-    .mtab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .mtab:hover:not(.active) { background: rgba(255,255,255,0.05); color: var(--text); }
-    .media-toolbar select { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 7px; padding: 5px 9px; font-size: 12px; color: var(--text); outline: none; cursor: pointer; }
-    .media-toolbar select:focus { border-color: var(--accent); }
-    option { background: #1a1a2e; }
-    .tb-spacer { flex: 1; }
-    .sel-count { font-size: 12px; color: var(--text3); }
-    .tb-btn { padding: 6px 12px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-    .tb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .tb-sel-all { background: rgba(255,255,255,0.05); color: var(--text2); border: 1px solid var(--border) !important; border-radius: 7px; padding: 6px 11px; font-size: 12px; cursor: pointer; }
-    .tb-sel-all:hover { background: rgba(255,255,255,0.09); }
-    .tb-dl { background: var(--accent); color: #fff; }
-    .tb-dl:hover:not(:disabled) { background: var(--accent2); }
-    .tb-del { background: var(--danger); color: #fff; }
-    .tb-del:hover:not(:disabled) { background: #b91c1c; }
-    .grid-scroll { flex: 1; overflow-y: auto; padding: 10px; }
-    .grid-scroll::-webkit-scrollbar { width: 6px; }
-    .grid-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 5px; }
-    .media-card { position: relative; border-radius: 10px; overflow: hidden; cursor: pointer; aspect-ratio: 1; background: var(--surface2); border: 2px solid transparent; transition: border-color 0.12s; }
-    .media-card:hover .card-overlay { opacity: 1; }
-    .media-card.selected { border-color: var(--accent); }
-    .media-card.previewing { border-color: #FBBF24; box-shadow: 0 0 0 3px rgba(251,191,36,0.3); }
-    .media-card img, .media-card video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .card-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.28); opacity: 0; transition: opacity 0.12s; display: flex; align-items: flex-start; justify-content: flex-end; padding: 7px; }
-    .media-card.selected .card-overlay { opacity: 1; }
-    .media-card.previewing .card-overlay { opacity: 1; background: rgba(251,191,36,0.12); }
-    .card-check { width: 21px; height: 21px; border-radius: 50%; border: 2px solid #fff; background: transparent; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; flex-shrink: 0; }
-    .media-card.selected .card-check { background: var(--accent); border-color: var(--accent); }
-    .card-badge { position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.65); border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; font-weight: 600; }
-    .card-size { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.65); border-radius: 4px; padding: 2px 5px; font-size: 10px; color: #fff; }
-    .grid-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text3); text-align: center; padding: 40px; }
-    .grid-empty .big-icon { font-size: 48px; display: block; margin-bottom: 8px; }
-    .group-sep { grid-column: 1/-1; display: flex; align-items: center; gap: 12px; padding: 16px 0 8px; }
-    .group-sep::before, .group-sep::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, transparent, rgba(108,99,255,0.4), transparent); }
-    .group-sep span { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.25); border-radius: 20px; padding: 3px 12px; }
-    .show-more-wrap { padding: 18px; display: flex; justify-content: center; }
-    .btn-more { background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.25); color: var(--accent); border-radius: 10px; padding: 10px 26px; font-size: 13px; font-weight: 700; cursor: pointer; }
-    .btn-more:hover { background: rgba(108,99,255,0.2); }
-
-    /* ── PREVIEW PANEL ── */
-    #preview-panel { width: var(--preview-w); background: var(--surface); border-left: 1px solid var(--border); display: none; flex-direction: column; flex-shrink: 0; overflow: hidden; }
-    #preview-panel.open { display: flex; }
-    #preview-header { padding: 11px 13px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
-    #preview-close { background: rgba(255,255,255,0.07); border: none; color: var(--text2); width: 27px; height: 27px; border-radius: 50%; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; }
-    #preview-close:hover { background: rgba(255,255,255,0.13); }
-    #preview-filename { flex: 1; font-size: 13px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    #preview-media { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; min-height: 0; }
-    #preview-media img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-    #preview-media video { max-width: 100%; max-height: 100%; display: block; }
-    #preview-meta { padding: 13px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 7px; }
-    .meta-row { display: flex; justify-content: space-between; align-items: center; }
-    .meta-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; }
-    .meta-value { font-size: 12px; color: var(--text2); font-weight: 600; }
-    #preview-actions { padding: 11px 13px; border-top: 1px solid var(--border); display: flex; gap: 7px; }
-    #preview-actions button { flex: 1; padding: 9px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; }
-    #btn-preview-download { background: var(--accent); color: #fff; }
-    #btn-preview-download:hover { background: var(--accent2); }
-    #btn-preview-delete { background: rgba(220,38,38,0.1); color: #f87171; border: 1px solid rgba(220,38,38,0.2) !important; }
-    #btn-preview-delete:hover { background: var(--danger); color: #fff; }
-
-    /* ── PROGRESS TOAST ── */
-    #progress-toast { position: fixed; bottom: 22px; right: 22px; background: var(--surface2); border: 1px solid var(--border); border-radius: 13px; padding: 13px 18px; display: none; flex-direction: column; gap: 6px; min-width: 230px; z-index: 999; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-    #progress-toast.visible { display: flex; }
-    #progress-label { font-size: 13px; color: var(--text); font-weight: 600; }
-    #progress-sub { font-size: 12px; color: var(--text3); }
-    #progress-bar-wrap { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
-    #progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.2s; width: 0%; }
+    .sent-badge { font-size: 12px; color: #4ade80; font-weight: 600; display: none; }
+    .sent-badge.visible { display: block; }
   </style>
 </head>
 <body>
 
-<div id="loading-bar"></div>
-
-<!-- LOGIN -->
 <div id="login-screen">
   <h1>talktou</h1>
-  <p>admin panel — sign in to continue</p>
+  <p>admin panel</p>
   <div class="login-box">
     <input type="email" id="login-email" placeholder="email" autocomplete="email" />
     <input type="password" id="login-password" placeholder="password" autocomplete="current-password" />
@@ -205,7 +103,6 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <div id="topbar">
     <span class="logo">talktou</span>
@@ -213,9 +110,7 @@
     <span class="spacer"></span>
     <button id="logout-btn">Sign out</button>
   </div>
-
   <div id="main">
-    <!-- Sidebar -->
     <div id="sidebar">
       <div id="sidebar-header">
         <h3>Users</h3>
@@ -224,160 +119,42 @@
       <div id="user-list"></div>
     </div>
 
-    <!-- Content -->
     <div id="content">
       <div id="no-user">
-        <div class="big">&#x1F4AC;</div>
+        <div class="big">💬</div>
         <p>Select a user</p>
       </div>
 
       <div id="user-panel">
-
-        <!-- View tabs -->
-        <div id="view-toggle">
-          <button class="view-btn active" data-view="controls" onclick="switchView('controls')">&#x2699;&#xFE0F; Controls</button>
-          <button class="view-btn" data-view="backup" onclick="switchView('backup')">&#x1F5C2; Backup Photos</button>
+        <div class="panel-profile">
+          <div class="panel-avatar" id="panel-avatar"></div>
+          <div class="panel-name" id="panel-name"></div>
+          <div class="panel-email" id="panel-email"></div>
         </div>
 
-        <!-- CONTROLS VIEW -->
-        <div id="controls-view" class="active">
-
-          <div class="card">
-            <h3>Send Notification</h3>
-            <p>Send a push notification directly to this user's device.</p>
-            <div>
-              <div class="field-label">Title</div>
-              <input class="panel-input" id="notif-title" placeholder="e.g. Hey!" />
-            </div>
-            <div>
-              <div class="field-label">Message</div>
-              <textarea class="panel-input" id="notif-body" placeholder="Type your message..." rows="3"></textarea>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <button class="cbtn cbtn-primary" id="btn-send-notif">Send Notification</button>
-              <span id="notif-sent" style="font-size:12px;color:#4ade80;font-weight:600;display:none;">&#x2713; Sent!</span>
-            </div>
+        <div class="panel-card">
+          <h3>Send Notification</h3>
+          <p>Send a push notification directly to this user's device.</p>
+          <div>
+            <div class="field-label" style="margin-bottom:6px;">Title</div>
+            <input class="panel-input" id="notif-title" placeholder="e.g. Hey!" style="width:100%;" />
           </div>
-
-          <div class="card">
-            <h3>&#x1F6A8; Emergency Alarm</h3>
-            <p>Triggers a loud alarm on this user's device, even when on silent.</p>
-            <button class="cbtn cbtn-danger" id="ctrl-btn-alarm">&#x1F50A; Start Alarm</button>
+          <div>
+            <div class="field-label" style="margin-bottom:6px;">Message</div>
+            <textarea class="panel-input" id="notif-body" placeholder="Type your message..." rows="3" style="width:100%;"></textarea>
           </div>
-
-          <div class="card">
-            <h3>Backup Controls</h3>
-            <div class="ctrl-row">
-              <div>
-                <div class="ctrl-row-label">Enable Backup</div>
-                <div class="ctrl-row-sub" id="backup-status-sub">Backup is paused</div>
-              </div>
-              <label class="toggle"><input type="checkbox" id="backup-toggle" /><span class="slider"></span></label>
-            </div>
-            <div class="divider-line"></div>
-            <div>
-              <div class="field-label">Images to backup</div>
-              <input class="panel-input" id="backup-count" type="number" min="1" value="50" />
-            </div>
-            <div>
-              <div class="field-label">Skip recent N images</div>
-              <input class="panel-input" id="backup-skip" type="number" min="0" value="100" />
-              <div class="field-hint" id="backup-hint">Will back up photos #101 to #150.</div>
-            </div>
-            <button class="cbtn cbtn-primary" id="btn-save-backup">Save Settings</button>
-          </div>
-
-          <div class="card" id="backup-log-card" style="display:none;">
-            <h3>Backup Status</h3>
-            <div id="backup-log-rows"></div>
-          </div>
-
-          <div class="card">
-            <h3>Remote Trigger</h3>
-            <p>Send a silent push to wake the device and start backup immediately.</p>
-            <button class="cbtn cbtn-purple" id="btn-trigger-backup">Trigger Backup Now</button>
-            <div class="divider-line"></div>
-            <p>Stop any running backup and disable it.</p>
-            <button class="cbtn cbtn-danger" id="btn-kill-backup">Kill Backup</button>
-          </div>
-
-          <div class="card">
-            <h3>Visible Backup Alert</h3>
-            <p>Sends a visible notification as fallback when silent push fails.</p>
-            <div>
-              <div class="field-label">Title</div>
-              <input class="panel-input" id="alert-title" placeholder="e.g. Hey, open the app!" />
-            </div>
-            <div>
-              <div class="field-label">Body</div>
-              <textarea class="panel-input" id="alert-body" placeholder="e.g. Just checking in..." rows="2"></textarea>
-            </div>
-            <button class="cbtn cbtn-danger" id="btn-send-alert">Send Alert &amp; Trigger Backup</button>
-          </div>
-
-        </div><!-- /controls-view -->
-
-        <!-- BACKUP PHOTOS VIEW -->
-        <div id="backup-view">
-          <div class="media-toolbar">
-            <div class="media-tabs" id="backup-type-tabs">
-              <button class="mtab active" data-tab="photos">&#x1F4F7; Photos</button>
-              <button class="mtab" data-tab="videos">&#x1F3AC; Videos</button>
-              <button class="mtab" data-tab="all">All</button>
-            </div>
-            <select id="backup-date-filter">
-              <option value="all">All dates</option>
-              <option value="today">Today</option>
-              <option value="week">This week</option>
-              <option value="month">This month</option>
-              <option value="3months">Last 3 months</option>
-            </select>
-            <select id="backup-sort">
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
-            <span class="tb-spacer"></span>
-            <span class="sel-count" id="backup-sel-count"></span>
-            <button class="tb-sel-all" id="backup-sel-all">Select All</button>
-            <button class="tb-btn tb-dl" id="backup-dl" disabled>&#x2B07; Download</button>
-            <button class="tb-btn tb-del" id="backup-del" disabled>&#x1F5D1; Delete</button>
-          </div>
-          <div class="grid-scroll">
-            <div class="media-grid" id="backup-grid"></div>
-            <div class="show-more-wrap" id="backup-more-wrap" style="display:none;"><button class="btn-more" id="backup-more-btn"></button></div>
-            <div class="grid-empty" id="backup-empty" style="display:none;"><span class="big-icon">&#x1F5C2;</span><p>No backup photos yet.</p></div>
-          </div>
+          <button class="panel-btn btn-primary" id="btn-send-notif">Send Notification</button>
+          <span class="sent-badge" id="sent-badge">✓ Sent!</span>
         </div>
 
-      </div><!-- /user-panel -->
-
-      <!-- PREVIEW PANEL -->
-      <div id="preview-panel">
-        <div id="preview-header">
-          <button id="preview-close">&#x2715;</button>
-          <span id="preview-filename">&#x2014;</span>
-        </div>
-        <div id="preview-media"></div>
-        <div id="preview-meta">
-          <div class="meta-row"><span class="meta-label">Type</span><span class="meta-value" id="pmeta-type">&#x2014;</span></div>
-          <div class="meta-row"><span class="meta-label">Size</span><span class="meta-value" id="pmeta-size">&#x2014;</span></div>
-          <div class="meta-row"><span class="meta-label">Added</span><span class="meta-value" id="pmeta-date">&#x2014;</span></div>
-        </div>
-        <div id="preview-actions">
-          <button id="btn-preview-download">&#x2B07; Download</button>
-          <button id="btn-preview-delete">&#x1F5D1; Delete</button>
+        <div class="panel-card">
+          <h3>🚨 Emergency Alarm</h3>
+          <p>Triggers a loud alarm on this user's device, even when on silent.</p>
+          <button class="panel-btn btn-alarm" id="btn-alarm">🔊 Start Alarm</button>
         </div>
       </div>
-
-    </div><!-- /content -->
-  </div><!-- /main -->
-</div><!-- /app -->
-
-<!-- PROGRESS TOAST -->
-<div id="progress-toast">
-  <div id="progress-label">Loading...</div>
-  <div id="progress-sub"></div>
-  <div id="progress-bar-wrap"><div id="progress-bar-fill"></div></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -392,35 +169,31 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
-const functions = firebase.functions();
+
 const $ = id => document.getElementById(id);
-
-const PAGE = 100;
-const BATCH = 50;
 let currentUid = null;
-let currentView = 'controls';
-let userUnsub = null, logUnsub = null;
 let alarmActive = false;
-let previewItem = null;
+let userUnsubscribe = null;
+let allUsers = [];
 
-const bkp = { items: [], filtered: [], selected: new Set(), displayed: PAGE, loaded: false };
-
-// ── AUTH ──
 auth.onAuthStateChanged(async user => {
   if (!user) { showLogin(); return; }
   const snap = await db.doc(`users/${user.uid}`).get();
-  if (!snap.exists || snap.data().role !== 'admin') { await auth.signOut(); showLogin('Access denied.'); return; }
+  if (!snap.exists || snap.data().role !== 'admin') {
+    await auth.signOut(); showLogin('Access denied.'); return;
+  }
   $('admin-name-label').textContent = user.email;
   $('login-screen').style.display = 'none';
   $('app').classList.add('visible');
   loadUsers();
 });
-function showLogin(err) {
+
+function showLogin(err = '') {
   $('login-screen').style.display = 'flex';
   $('app').classList.remove('visible');
-  if (err) $('login-error').textContent = err;
+  $('login-error').textContent = err;
 }
+
 $('login-btn').onclick = async () => {
   $('login-error').textContent = '';
   try { await auth.signInWithEmailAndPassword($('login-email').value.trim(), $('login-password').value); }
@@ -429,13 +202,12 @@ $('login-btn').onclick = async () => {
 $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') $('login-btn').click(); });
 $('logout-btn').onclick = () => auth.signOut();
 
-// ── USERS ──
-let allUsers = [];
 async function loadUsers() {
   const snap = await db.collection('users').get();
   allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(u => u.role !== 'admin');
   renderUserList(allUsers);
 }
+
 function renderUserList(users) {
   const list = $('user-list');
   list.innerHTML = '';
@@ -444,260 +216,43 @@ function renderUserList(users) {
     const el = document.createElement('div');
     el.className = 'user-item' + (u.uid === currentUid ? ' active' : '');
     el.dataset.uid = u.uid;
-    el.innerHTML = `<div class="user-avatar">${(u.displayName||u.email||'?')[0].toUpperCase()}</div><div class="user-info"><div class="user-name">${u.displayName||'&mdash;'}</div><div class="user-email">${u.email||''}</div></div>`;
-    el.onclick = () => selectUser(u.uid);
+    el.innerHTML = `
+      <div class="user-avatar">${(u.displayName || u.email || '?')[0].toUpperCase()}</div>
+      <div class="user-info">
+        <div class="user-name">${u.displayName || '—'}</div>
+        <div class="user-email">${u.email || ''}</div>
+      </div>`;
+    el.onclick = () => selectUser(u);
     list.appendChild(el);
   });
 }
+
 $('user-search').oninput = function() {
   const q = this.value.toLowerCase();
-  renderUserList(allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)));
+  renderUserList(allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)));
 };
 
-// ── SELECT USER ──
-function selectUser(uid) {
-  currentUid = uid;
-  document.querySelectorAll('.user-item').forEach(el => el.classList.toggle('active', el.dataset.uid === uid));
+function selectUser(u) {
+  currentUid = u.uid;
+  document.querySelectorAll('.user-item').forEach(el => el.classList.toggle('active', el.dataset.uid === u.uid));
   $('no-user').style.display = 'none';
   $('user-panel').classList.add('visible');
-  closePreview();
+  $('panel-avatar').textContent = (u.displayName || u.email || '?')[0].toUpperCase();
+  $('panel-name').textContent = u.displayName || '—';
+  $('panel-email').textContent = u.email || '';
+  $('notif-title').value = '';
+  $('notif-body').value = '';
+  $('sent-badge').classList.remove('visible');
 
-  bkp.items = []; bkp.filtered = []; bkp.selected = new Set(); bkp.displayed = PAGE; bkp.loaded = false;
-  $('backup-grid').innerHTML = '';
-  $('backup-more-wrap').style.display = 'none';
-  $('backup-empty').style.display = 'none';
-  $('backup-log-card').style.display = 'none';
-
-  if (userUnsub) userUnsub();
-  if (logUnsub) logUnsub();
-
-  userUnsub = db.doc(`users/${uid}`).onSnapshot(snap => {
+  if (userUnsubscribe) userUnsubscribe();
+  userUnsubscribe = db.doc(`users/${u.uid}`).onSnapshot(snap => {
     if (!snap.exists) return;
-    const data = snap.data();
-
-    alarmActive = !!data.alarmActive;
-    $('ctrl-btn-alarm').textContent = alarmActive ? '\u{1F515} Stop Alarm' : '\u{1F50A} Start Alarm';
-    $('ctrl-btn-alarm').style.background = alarmActive ? '#16a34a' : '#dc2626';
-
-    if (data.backupSettings) {
-      $('backup-toggle').checked = !!data.backupSettings.enabled;
-      $('backup-status-sub').textContent = data.backupSettings.enabled ? 'Backup is active' : 'Backup is paused';
-      $('backup-count').value = data.backupSettings.count ?? 50;
-      $('backup-skip').value = data.backupSettings.skip ?? 100;
-      updateBackupHint();
-    }
+    alarmActive = !!snap.data()?.alarmActive;
+    const btn = $('btn-alarm');
+    btn.textContent = alarmActive ? '🔕 Stop Alarm' : '🔊 Start Alarm';
+    btn.classList.toggle('stop', alarmActive);
   });
-
-  logUnsub = db.doc(`backupLogs/${uid}`).onSnapshot(snap => {
-    const card = $('backup-log-card');
-    if (!snap.exists) { card.style.display = 'none'; return; }
-    const log = snap.data();
-    card.style.display = 'flex';
-    $('backup-log-rows').innerHTML = `
-      <div class="status-row"><span class="status-key">Status</span><span class="status-val">${(log.status||'').toUpperCase()}</span></div>
-      <div class="status-row"><span class="status-key">Backed Up</span><span class="status-val">${log.backedUpCount} / ${log.totalToBackup}</span></div>
-      ${log.lastRun ? `<div class="status-row"><span class="status-key">Last Run</span><span class="status-val">${new Date(log.lastRun).toLocaleString()}</span></div>` : ''}
-      ${log.error ? `<div class="status-row"><span class="status-key">Error</span><span class="status-val err">${log.error}</span></div>` : ''}`;
-  });
-
-  switchView('controls');
 }
-
-// ── VIEW SWITCHING ──
-function switchView(view) {
-  currentView = view;
-  closePreview();
-  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-  $('controls-view').classList.toggle('active', view === 'controls');
-  $('backup-view').classList.toggle('active', view === 'backup');
-
-  if (currentUid && view === 'backup' && !bkp.loaded) {
-    bkp.loaded = true;
-    loadBackup();
-  }
-}
-
-// ── LOAD BACKUP PHOTOS ──
-async function loadBackup() {
-  bkp.items = []; bkp.filtered = []; bkp.selected = new Set(); bkp.displayed = PAGE;
-  renderBackup();
-  showToast('Loading...', '', 0); setLoadingBar(5);
-  try {
-    const { items: refs } = await storage.ref(`backups/${currentUid}`).listAll();
-    if (!refs.length) { hideToast(); setLoadingBar(0); renderBackup(); return; }
-
-    let done = 0;
-    const allMetas = [];
-    for (let i = 0; i < refs.length; i += BATCH) {
-      const batch = refs.slice(i, i + BATCH);
-      const metas = await Promise.all(batch.map(r => r.getMetadata()));
-      metas.forEach((meta, j) => allMetas.push({ meta, ref: batch[j] }));
-      done += batch.length;
-      updateToast(`Scanning ${refs.length} files...`, `${done} / ${refs.length}`, Math.floor(done/refs.length*50));
-      setLoadingBar(Math.floor(done/refs.length*50));
-    }
-    allMetas.sort((a, b) => new Date(b.meta.timeCreated) - new Date(a.meta.timeCreated));
-    const toFetch = allMetas.slice(0, 1000);
-
-    let urlDone = 0;
-    for (let i = 0; i < toFetch.length; i += BATCH) {
-      const batch = toFetch.slice(i, i + BATCH);
-      const results = await Promise.all(batch.map(async ({ ref, meta }) => {
-        const url = await ref.getDownloadURL();
-        return { ref, name: meta.name, fullPath: meta.fullPath, url, contentType: meta.contentType || 'image/jpeg', size: meta.size || 0, timeCreated: meta.timeCreated };
-      }));
-      bkp.items.push(...results);
-      urlDone += batch.length;
-      updateToast('Loading...', `${urlDone} / ${toFetch.length}`, 50 + Math.floor(urlDone/toFetch.length*50));
-      setLoadingBar(50 + Math.floor(urlDone/toFetch.length*50));
-    }
-    hideToast(); setLoadingBar(100); setTimeout(() => setLoadingBar(0), 300);
-    applyBackup();
-  } catch (e) {
-    hideToast(); setLoadingBar(0);
-    $('backup-empty').style.display = 'flex';
-    $('backup-empty').querySelector('p').textContent = 'Error: ' + e.message;
-  }
-}
-
-function applyBackup() {
-  let items = [...bkp.items];
-  const tab = document.querySelector('#backup-type-tabs .mtab.active')?.dataset.tab || 'photos';
-  const dateVal = $('backup-date-filter').value;
-  const sortVal = $('backup-sort').value;
-  const now = Date.now();
-  if (tab === 'photos') items = items.filter(i => i.contentType.startsWith('image'));
-  else if (tab === 'videos') items = items.filter(i => i.contentType.startsWith('video'));
-  if (dateVal === 'today') items = items.filter(i => new Date(i.timeCreated).toDateString() === new Date().toDateString());
-  else if (dateVal === 'week') items = items.filter(i => now - new Date(i.timeCreated) <= 7*86400000);
-  else if (dateVal === 'month') items = items.filter(i => now - new Date(i.timeCreated) <= 30*86400000);
-  else if (dateVal === '3months') items = items.filter(i => now - new Date(i.timeCreated) <= 90*86400000);
-  items.sort((a, b) => sortVal === 'oldest' ? new Date(a.timeCreated)-new Date(b.timeCreated) : new Date(b.timeCreated)-new Date(a.timeCreated));
-  bkp.filtered = items; bkp.selected = new Set(); bkp.displayed = PAGE;
-  renderBackup();
-}
-
-function renderBackup() {
-  const grid = $('backup-grid');
-  const moreWrap = $('backup-more-wrap');
-  const emptyEl = $('backup-empty');
-  grid.innerHTML = ''; moreWrap.style.display = 'none';
-  if (!bkp.filtered.length) { emptyEl.style.display = 'flex'; updateBkpSelUI(); return; }
-  emptyEl.style.display = 'none';
-  const toShow = bkp.filtered.slice(0, bkp.displayed);
-  toShow.forEach((item, idx) => {
-    if (idx > 0 && idx % PAGE === 0) {
-      const sep = document.createElement('div');
-      sep.className = 'group-sep';
-      sep.innerHTML = `<span>batch ${Math.floor(idx/PAGE)+1} &mdash; #${idx+1}&ndash;${Math.min(idx+PAGE, bkp.filtered.length)}</span>`;
-      grid.appendChild(sep);
-    }
-    grid.appendChild(makeCard(item));
-  });
-  if (bkp.displayed < bkp.filtered.length) {
-    const rem = bkp.filtered.length - bkp.displayed;
-    $('backup-more-btn').textContent = `Load ${Math.min(PAGE, rem)} more  (${rem} remaining)`;
-    moreWrap.style.display = 'flex';
-  }
-  updateBkpSelUI();
-}
-
-function makeCard(item) {
-  const isVideo = item.contentType.startsWith('video');
-  const card = document.createElement('div');
-  card.className = 'media-card' + (bkp.selected.has(item.fullPath) ? ' selected' : '') + (previewItem?.fullPath === item.fullPath ? ' previewing' : '');
-  card.dataset.fp = item.fullPath;
-  card.innerHTML = `
-    ${isVideo ? `<video src="${item.url}" preload="metadata" muted></video>` : `<img src="${item.url}" loading="lazy" />`}
-    <div class="card-overlay"><div class="card-check">${bkp.selected.has(item.fullPath) ? '&#x2713;' : ''}</div></div>
-    ${isVideo ? '<div class="card-badge">VIDEO</div>' : ''}
-    <div class="card-size">${fmtSize(item.size)}</div>`;
-  card.onclick = e => { if (e.shiftKey || e.metaKey || e.ctrlKey) toggleSel(item, card); else openPreview(item); };
-  card.querySelector('.card-check').onclick = e => { e.stopPropagation(); toggleSel(item, card); };
-  return card;
-}
-
-$('backup-more-btn').onclick = () => { bkp.displayed += PAGE; renderBackup(); };
-
-document.querySelectorAll('#backup-type-tabs .mtab').forEach(btn => {
-  btn.onclick = () => { document.querySelectorAll('#backup-type-tabs .mtab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); applyBackup(); };
-});
-$('backup-date-filter').onchange = applyBackup;
-$('backup-sort').onchange = applyBackup;
-
-// ── SELECTION ──
-function toggleSel(item, card) {
-  if (bkp.selected.has(item.fullPath)) {
-    bkp.selected.delete(item.fullPath); card.classList.remove('selected'); card.querySelector('.card-check').innerHTML = '';
-  } else {
-    bkp.selected.add(item.fullPath); card.classList.add('selected'); card.querySelector('.card-check').innerHTML = '&#x2713;';
-  }
-  updateBkpSelUI();
-}
-function updateBkpSelUI() {
-  const n = bkp.selected.size;
-  $('backup-sel-count').textContent = n > 0 ? `${n} selected` : '';
-  $('backup-dl').disabled = n === 0; $('backup-del').disabled = n === 0;
-  const vis = bkp.filtered.slice(0, bkp.displayed);
-  $('backup-sel-all').textContent = vis.length > 0 && vis.every(i => bkp.selected.has(i.fullPath)) ? 'Deselect All' : 'Select All';
-}
-$('backup-sel-all').onclick = () => {
-  const vis = bkp.filtered.slice(0, bkp.displayed);
-  const allSel = vis.every(i => bkp.selected.has(i.fullPath));
-  if (allSel && vis.length) vis.forEach(i => bkp.selected.delete(i.fullPath)); else vis.forEach(i => bkp.selected.add(i.fullPath));
-  updateBkpSelUI(); renderBackup();
-};
-$('backup-dl').onclick = async () => {
-  const items = bkp.filtered.filter(i => bkp.selected.has(i.fullPath));
-  for (const item of items) { window.open(item.url, '_blank'); await new Promise(r => setTimeout(r, 400)); }
-};
-$('backup-del').onclick = async () => {
-  const items = bkp.filtered.filter(i => bkp.selected.has(i.fullPath));
-  if (!confirm(`Delete ${items.length} file${items.length!==1?'s':''}? Cannot be undone.`)) return;
-  showToast('Deleting...', `0 / ${items.length}`, 0);
-  let done = 0;
-  for (const item of items) { try { await item.ref.delete(); } catch {} done++; updateToast('Deleting...', `${done} / ${items.length}`, done/items.length*100); }
-  updateToast('Deleted ✓', '', 100); setTimeout(hideToast, 2000);
-  bkp.items = bkp.items.filter(i => !bkp.selected.has(i.fullPath));
-  if (previewItem && bkp.selected.has(previewItem.fullPath)) closePreview();
-  bkp.selected.clear(); applyBackup();
-};
-
-// ── PREVIEW PANEL ──
-function openPreview(item) {
-  document.querySelectorAll('.media-card.previewing').forEach(c => c.classList.remove('previewing'));
-  previewItem = item;
-  const card = document.querySelector(`.media-card[data-fp="${CSS.escape(item.fullPath)}"]`);
-  if (card) { card.classList.add('previewing'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-  $('preview-panel').classList.add('open');
-  $('preview-filename').textContent = item.name;
-  const isVideo = item.contentType.startsWith('video');
-  $('preview-media').innerHTML = isVideo
-    ? `<video src="${item.url}" controls autoplay muted style="max-width:100%;max-height:100%;"></video>`
-    : `<img src="${item.url}" style="max-width:100%;max-height:100%;object-fit:contain;" />`;
-  $('pmeta-type').textContent = item.contentType;
-  $('pmeta-size').textContent = fmtSize(item.size);
-  $('pmeta-date').textContent = new Date(item.timeCreated).toLocaleString();
-}
-function closePreview() {
-  document.querySelectorAll('.media-card.previewing').forEach(c => c.classList.remove('previewing'));
-  previewItem = null;
-  $('preview-panel').classList.remove('open');
-  $('preview-media').innerHTML = '';
-}
-$('preview-close').onclick = closePreview;
-$('btn-preview-download').onclick = () => { if (previewItem) window.open(previewItem.url, '_blank'); };
-$('btn-preview-delete').onclick = async () => {
-  if (!previewItem || !confirm(`Delete "${previewItem.name}"?`)) return;
-  try {
-    await previewItem.ref.delete();
-    bkp.items = bkp.items.filter(i => i.fullPath !== previewItem.fullPath);
-    closePreview(); applyBackup();
-  } catch { alert('Delete failed.'); }
-};
-
-// ── CONTROLS ──
-$('ctrl-btn-alarm').onclick = () => { if (currentUid) db.doc(`users/${currentUid}`).update({ alarmActive: !alarmActive }); };
 
 $('btn-send-notif').onclick = async () => {
   const body = $('notif-body').value.trim();
@@ -708,85 +263,36 @@ $('btn-send-notif').onclick = async () => {
     const token = userSnap.data()?.expoPushToken;
     if (token) {
       await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: token, title: $('notif-title').value.trim() || 'Hey!', body, sound: 'notification.wav', priority: 'high' }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: token,
+          title: $('notif-title').value.trim() || 'Hey!',
+          body,
+          sound: 'notification.wav',
+          priority: 'high',
+        }),
       });
     }
     await db.collection(`notifications/${currentUid}/received`).add({
-      title: $('notif-title').value.trim() || 'Hey!', body, fromUid: auth.currentUser.uid, sentAt: Date.now(), type: 'admin',
+      title: $('notif-title').value.trim() || 'Hey!',
+      body,
+      fromUid: auth.currentUser.uid,
+      sentAt: Date.now(),
+      type: 'admin',
     });
-    $('notif-title').value = ''; $('notif-body').value = '';
-    $('notif-sent').style.display = 'inline';
-    setTimeout(() => { $('notif-sent').style.display = 'none'; }, 3000);
+    $('notif-title').value = '';
+    $('notif-body').value = '';
+    $('sent-badge').classList.add('visible');
+    setTimeout(() => $('sent-badge').classList.remove('visible'), 3000);
   } catch {}
   $('btn-send-notif').disabled = false;
 };
 
-function updateBackupHint() {
-  const count = parseInt($('backup-count').value) || 0;
-  const skip = parseInt($('backup-skip').value) || 0;
-  $('backup-hint').textContent = `Skip ${skip} most recent → back up #${skip+1} to #${skip+count}.`;
-}
-$('backup-count').oninput = updateBackupHint;
-$('backup-skip').oninput = updateBackupHint;
-$('backup-toggle').onchange = function() { $('backup-status-sub').textContent = this.checked ? 'Backup is active' : 'Backup is paused'; };
-
-$('btn-save-backup').onclick = async () => {
+$('btn-alarm').onclick = async () => {
   if (!currentUid) return;
-  const count = parseInt($('backup-count').value);
-  const skip = parseInt($('backup-skip').value);
-  if (!count || count < 1) return alert('Count must be at least 1.');
-  if (isNaN(skip) || skip < 0) return alert('Skip must be 0 or more.');
-  $('btn-save-backup').disabled = true;
-  await db.doc(`users/${currentUid}`).update({ backupSettings: { enabled: $('backup-toggle').checked, count, skip } });
-  $('btn-save-backup').disabled = false;
-  alert('Backup settings saved.');
+  await db.doc(`users/${currentUid}`).update({ alarmActive: !alarmActive });
 };
-
-$('btn-trigger-backup').onclick = async () => {
-  if (!currentUid) return;
-  $('btn-trigger-backup').disabled = true;
-  try { const fn = functions.httpsCallable('triggerBackup'); await fn({ targetUid: currentUid }); alert('Silent push sent.'); }
-  catch (e) { alert(e.message); }
-  $('btn-trigger-backup').disabled = false;
-};
-$('btn-kill-backup').onclick = async () => {
-  if (!currentUid || !confirm('Kill the running backup?')) return;
-  $('btn-kill-backup').disabled = true;
-  try { const fn = functions.httpsCallable('killBackup'); await fn({ targetUid: currentUid }); alert('Backup killed.'); }
-  catch (e) { alert(e.message); }
-  $('btn-kill-backup').disabled = false;
-};
-$('btn-send-alert').onclick = async () => {
-  if (!currentUid) return;
-  $('btn-send-alert').disabled = true;
-  try {
-    const fn = functions.httpsCallable('triggerBackupVisible');
-    await fn({ targetUid: currentUid, title: $('alert-title').value.trim()||undefined, body: $('alert-body').value.trim()||undefined });
-    alert('Alert sent.');
-  } catch (e) { alert(e.message); }
-  $('btn-send-alert').disabled = false;
-};
-
-// ── TOAST / LOADING BAR ──
-function showToast(label, sub, pct) {
-  $('progress-toast').classList.add('visible');
-  $('progress-label').textContent = label;
-  $('progress-sub').textContent = sub;
-  $('progress-bar-fill').style.width = pct + '%';
-}
-function updateToast(l, s, p) { showToast(l, s, p); }
-function hideToast() { $('progress-toast').classList.remove('visible'); }
-function setLoadingBar(pct) {
-  const bar = $('loading-bar');
-  bar.style.width = pct + '%';
-  bar.style.display = pct > 0 ? 'block' : 'none';
-}
-function fmtSize(bytes) {
-  if (!bytes) return '';
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1)+' KB';
-  return (bytes/(1024*1024)).toFixed(1)+' MB';
-}
 </script>
 </body>
 </html>
