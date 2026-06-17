@@ -57,6 +57,7 @@ export default function HomeScreen() {
 
         <Animated.View style={[styles.taglineWrap, { opacity: fadeAnim }]}>
           <Text style={styles.tagline}>Sarib and Sumi — an untold Luv Story {'<3'}</Text>
+          <Text style={{ color: 'pink', fontSize: 18, fontWeight: '700', marginTop: 8 }}>OTA TEST PINK</Text>
         </Animated.View>
       </SafeAreaView>
 
