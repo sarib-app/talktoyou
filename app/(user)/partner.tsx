@@ -68,6 +68,14 @@ export default function PartnerScreen() {
   const [copied, setCopied] = useState(false);
   const [lightboxUri, setLightboxUri] = useState<string | null>(null);
   const [partnerLastSeen, setPartnerLastSeen] = useState(0);
+  const [themeKey, setThemeKey] = useState<'purple' | 'pink' | 'orange'>('purple');
+
+  const THEMES = {
+    purple: { bg: '#0D0D14', header: '#141420', accent: '#6C63FF', accentSoft: 'rgba(108,99,255,0.15)', accentBorder: 'rgba(108,99,255,0.3)', bubbleMine: '#6C63FF', bubbleTheirs: '#1E293B', dot: '#6C63FF' },
+    pink:   { bg: '#1a0510', header: '#2d0a1a', accent: '#E91E8C', accentSoft: 'rgba(233,30,140,0.15)', accentBorder: 'rgba(233,30,140,0.3)', bubbleMine: '#E91E8C', bubbleTheirs: '#2d1525', dot: '#FF69B4' },
+    orange: { bg: '#120a00', header: '#1f1000', accent: '#F97316', accentSoft: 'rgba(249,115,22,0.15)',  accentBorder: 'rgba(249,115,22,0.3)',  bubbleMine: '#F97316', bubbleTheirs: '#2a1500', dot: '#FB923C' },
+  };
+  const T = THEMES[themeKey];
   const underlineAnim = useRef(new Animated.Value(0)).current;
   const chatListRef = useRef<FlatList>(null);
   const isChatTabRef = useRef(true);
@@ -242,19 +250,29 @@ export default function PartnerScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.container}>
-        <SafeAreaView edges={['top']} style={styles.header}>
-          <Text style={styles.headerTitle}>talktou</Text>
+      <View style={[styles.container, { backgroundColor: T.bg }]}>
+        <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: T.header }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+            <Text style={[styles.headerTitle, { color: T.accent }]}>talktou</Text>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              {(['purple', 'pink', 'orange'] as const).map(k => (
+                <TouchableOpacity key={k} onPress={() => setThemeKey(k)}
+                  style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: THEMES[k].dot,
+                    borderWidth: themeKey === k ? 2 : 0, borderColor: '#fff',
+                    transform: [{ scale: themeKey === k ? 1.2 : 1 }] }} />
+              ))}
+            </View>
+          </View>
           <Text style={styles.headerSub}>
             {partnerProfile ? `with ${partnerProfile.displayName}` : 'find your person'}
           </Text>
           <View style={styles.tabBar}>
             {TABS.map((t) => (
               <TouchableOpacity key={t} style={styles.tabItem} onPress={() => animateTab(t)}>
-                <Text style={[styles.tabLabel, tab === t && styles.tabLabelActive]}>{t}</Text>
+                <Text style={[styles.tabLabel, tab === t && { color: '#F7F6F2' }]}>{t}</Text>
               </TouchableOpacity>
             ))}
-            <Animated.View style={[styles.tabUnderline, { transform: [{ translateX }] }]} />
+            <Animated.View style={[styles.tabUnderline, { backgroundColor: T.accent, transform: [{ translateX }] }]} />
           </View>
         </SafeAreaView>
 
@@ -296,7 +314,7 @@ export default function PartnerScreen() {
                       </View>
                     </View>
                   ) : (
-                    <View style={[styles.bubble, item.isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
+                    <View style={[styles.bubble, { backgroundColor: item.isMine ? T.bubbleMine : T.bubbleTheirs }, item.isMine ? { borderBottomRightRadius: 4 } : { borderBottomLeftRadius: 4 }]}>
                       <Text style={[styles.bubbleText, item.isMine ? styles.bubbleTextMine : styles.bubbleTextTheirs]}>
                         {item.text}
                       </Text>
@@ -316,14 +334,14 @@ export default function PartnerScreen() {
               )}
             />
             {partnerProfile && (
-              <View style={styles.inputBar}>
+              <View style={[styles.inputBar, { backgroundColor: T.header }]}>
                 <TouchableOpacity
-                  style={[styles.imageFab, sendingImage && styles.sendFabDisabled]}
+                  style={[styles.imageFab, { backgroundColor: T.accentSoft, borderColor: T.accentBorder }, sendingImage && styles.sendFabDisabled]}
                   onPress={handlePickImage}
                   disabled={sendingImage}
                 >
                   {sendingImage
-                    ? <ActivityIndicator color="#6C63FF" size="small" />
+                    ? <ActivityIndicator color={T.accent} size="small" />
                     : <Text style={styles.imageFabText}>🖼</Text>}
                 </TouchableOpacity>
                 <TextInput
@@ -336,7 +354,7 @@ export default function PartnerScreen() {
                   maxLength={120}
                 />
                 <TouchableOpacity
-                  style={[styles.sendFab, (!messageInput.trim() || sending) && styles.sendFabDisabled]}
+                  style={[styles.sendFab, { backgroundColor: T.accent }, (!messageInput.trim() || sending) && styles.sendFabDisabled]}
                   onPress={handleSend}
                   disabled={!messageInput.trim() || sending}
                 >
